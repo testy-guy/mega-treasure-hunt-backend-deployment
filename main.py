@@ -3,6 +3,8 @@ import fastapi
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import HTTPException
 from pydantic import BaseModel
+from typing import Optional
+from datetime import datetime
 
 app = fastapi.FastAPI()
 
@@ -18,6 +20,10 @@ class addScore(BaseModel):
     username: str
     score: int
     difficulty: str
+
+class Note(BaseModel):
+    username: str
+    note: str
 
 @app.get("/top10/")
 def top10():
@@ -70,18 +76,42 @@ def top5pr(username: str):
         conn.close()
 
 @app.get("/notes/")
-def get_notes():
+def get_notes(username: Optional[str] = None, start_date: Optional[str] = None, end_date: Optional[str] = None):
     try:
         conn = sq.connect("database.db")
         cursor = conn.cursor()
 
         cursor.execute("SELECT * FROM notes")
         result = cursor.fetchall()
-        result = [{"username" : n[0], "note" : n[1]} for n in result]
+        result = [{"username" : n[0], "note" : n[1], "date" : n[2]} for n in result]
+
+        if username:
+            result = list(filter(lambda n: n["username"]==username, result))
+        if start_date:
+            result = list(filter(lambda n: n["date"]>=start_date, result))
+        if end_date:
+            result = list(filter(lambda n: n["date"]<=end_date, result))
 
         return result
     except HTTPException:
         raise HTTPException(500, "")
+    except Exception as e:
+        raise HTTPException(500, f"an error occured, {e}")
+    finally:
+        conn.close()
+
+@app.post("/add_note/")
+def add_note(note: Note):
+    try:
+        conn = sq.connect("database.db")
+        cursor = conn.cursor()
+
+        cursor.execute("INSERT INTO notes (username, note, date) VALUES (?, ?, ?)",(note.username, note.note, datetime.now().strftime("%Y/%m/%d")))
+
+        conn.commit()
+        return {"details":"note added succesfully"}
+    except HTTPException:
+        raise HTTPException(500)
     except Exception as e:
         raise HTTPException(500, f"an error occured, {e}")
     finally:

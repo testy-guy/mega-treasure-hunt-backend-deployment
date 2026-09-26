@@ -11,19 +11,28 @@
   <link rel="stylesheet" href="notes.css">
 </head>
 <body>
-    <div class="overlay" id="nameForm">
-        <div class="nameForm">
-          <input type="text" placeholder="Enter your name: " class="nameInput" id="nameInput">
-          <div class="msg" id="msg"></div>
-          <button onclick="confirmUsername()">Confirm name</button>
-        </div>
-    </div>
-    <div class="overlay hidden" id="main2">
-        <div class="Container">
-            <h1>Players notes</h1>
-            <textarea class="noteInput"></textarea>
-        </div>
-    </div>
-    <script src="notes.js"></script>
+  
+  <div class="overlay" id="nameForm">
+    <button class="backBtn"><a href="index.html">back</a></button>
+      <div class="nameForm">
+        <input type="text" placeholder="Enter your name: " class="nameInput" id="nameInput">
+        <div class="msg" id="msg"></div>
+        <button onclick="confirmUsername()">Confirm name</button>
+      </div>
+  </div>
+  <div class="overlay hidden" id="main2">
+    <a class="backBtn" href="index.html">Back</a>
+      <div class="container">
+          <h1>Players notes</h1>
+          <div class="inputs">
+            <textarea class="noteInput" id="noteInput" placeholder="type some tips to the other players"></textarea>
+            <button class="postBtn" id="noteItBtn">Note it!</button>
+          </div>
+          <div class="notes" id="notesContainer">
+
+          </div>
+      </div>
+  </div>
+  <script src="notes.js"></script>
 </body>
 </html>

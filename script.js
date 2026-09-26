@@ -679,6 +679,10 @@ async function loadLeaderBoard(){
     `;
   }
 
+  leaderBoardHtml += `
+    <p>want to know how they got there? read thier notes <a href="notes.html">here!</a></p>
+  `
+
   document.getElementById("leaderBoard").innerHTML = leaderBoardHtml;
 }
 

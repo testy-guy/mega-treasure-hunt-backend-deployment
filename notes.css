@@ -4,6 +4,29 @@
     justify-content: center;
     align-items: center;
     gap: 50px;
+    margin-top: 100px;
+}
+
+.inputs {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.postBtn {
+    max-width: 50%;
+    border-radius: 10px;
+    font-size: 24px;
+}
+
+textarea {
+    padding: 5px;
+    font-size: 16px;
+    width: 33vw;
+    height: 20vh;
+    max-width: 70vw;
+    max-height: 50vh;
 }
 
 .notes {
@@ -18,5 +41,32 @@
     border: 1px solid #2a2f38;
     border-radius: 10px;
     min-width: fit-content;
-    width: 33vw;
+    width: 20vw;
+    max-width: 33vw;
+    transform: translateY(0%);
+    transition: transform 0.3s;
+}
+
+.noteCard:hover {
+    transform: translateY(-3%);
+    transition: transform 0.3s;
+}
+
+.topContainer {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    padding: 30px;
+    padding-bottom: 0px;
+}
+
+.noteText {
+    margin-bottom: 20px;
+}
+
+.backBtn {
+    position: absolute;
+    left: 15%;
+    cursor: pointer;
+    top: 10%;
 }

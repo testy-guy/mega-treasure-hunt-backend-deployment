@@ -18,7 +18,8 @@ def setup():
     cursor.execute("""
                    CREATE TABLE notes (
                    username TEXT NOT NULL,
-                   note TEXT
+                   note TEXT,
+                   date TEXT NOT NULL
                    )
     """)
 
