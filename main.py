@@ -62,12 +62,14 @@ def top5pr(username: str):
         conn = sq.connect("database.db")
         cursor = conn.cursor()
 
-        cursor.execute("SELECT score FROM highscores WHERE username = ?",(username,))
+        cursor.execute("SELECT score,difficulty FROM highscores WHERE username = ? ORDER BY score DESC LIMIT 5",(username,))
         result = cursor.fetchall()
+
+        result = [{"score" : n[0], "difficulty" : n[1]} for n in result]
 
         if not result:
             raise HTTPException(404, "user not found")
-        return result[0]
+        return result
     except HTTPException:
         raise HTTPException(404, "user not found")
     except Exception as e:

@@ -649,18 +649,42 @@ async function getLeaderBoardData(){
 
     let data = await request.json();
 
-    console.log(data)
-
-    return data
+    return data;
 
   }
   catch(e){
     console.log("an error occured: " + e);
+    return null;
+  }
+}
+
+async function getPrLeaderBoardData() {
+  try {
+    let request = await fetch(API_URL+"top5pr/"+localStorage.getItem("username"));
+
+    let data = await request.json();
+
+    console.log(data);
+
+    return data;
+  }
+  catch(e) {
+    console.log("an error has occured: " + e);
+    return null;
   }
 }
 
 async function loadLeaderBoard(){
   let data = await getLeaderBoardData();
+
+  if (data === null){
+    let leaderBoardHtml = `
+    <div class="no-records">
+      No records yet :(
+    </div>`;
+    document.getElementById("leaderBoard").innerHTML = leaderBoardHtml;
+    return;
+  } 
 
   let leaderBoardHtml = "";
 
@@ -684,6 +708,39 @@ async function loadLeaderBoard(){
   `
 
   document.getElementById("leaderBoard").innerHTML = leaderBoardHtml;
+  return;
+}
+
+async function loadPrLeaderBoard() {
+  let data = await getPrLeaderBoardData();
+
+  if (data === null){
+    let leaderBoardHtml =
+    `
+    <div>
+      No personal records yet :(
+    </div>
+    `;
+    document.getElementById("prLeaderBoard").innerHTML = leaderBoardHtml;
+    return;
+  }
+
+  let leaderBoardHtml = "";
+
+  leaderBoardHtml += "<h1>Pr Leader Board</h1>"
+
+  for (let i = 0; i < data.length; i++){
+    leaderBoardHtml += `
+    <div class="leaderBoardScore">
+      <span class="rank ${i == 1 ? "first": i == 2 ? "second": i == 3 ? "third" : ""}">${i+1}-</span>
+      <span class=scoreScore>${data[i].score}</span>
+      <span class="scoreDifficulty ${data[i].difficulty}">${data[i].difficulty}</span>
+    </div>
+    `;
+  }
+
+  document.getElementById("prLeaderBoard").innerHTML = leaderBoardHtml;
+  return;
 }
 
 function checkName(){
@@ -733,6 +790,7 @@ document.addEventListener("DOMContentLoaded", async function (e){
   e.preventDefault();
   checkName();
   await loadLeaderBoard();
+  await loadPrLeaderBoard();
 })
 
 draw();

@@ -8,7 +8,7 @@ function checkName(){
 }
 
 function confirmUsername(){
-    let name = docuemnt.getElementById("nameInput").value.trim();
+    let name = document.getElementById("nameInput").value.trim();
     if (name.length < 3) {
         document.getElementById("msg").innerHTML = "Name must be atleast 3 characters long";
         return;
