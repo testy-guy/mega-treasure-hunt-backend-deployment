@@ -1,12 +1,16 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
+const sharkPng = new Image();
+sharkPng.src = "shark.png"
+const BossSharkPng = new Image();
+BossSharkPng.src = "boss shark.png";
 
 const API_URL = "http://127.0.0.1:8000/";
 
 const DIFFICULTY = {
-  easy: { time: 80, playerSpeed: 5, sharkSpeed: 1.6, sharkPerLevel: 1, coinBase: 3, chaseChance: 0.15 },
-  medium: { time: 60, playerSpeed: 4.5, sharkSpeed: 2.4, sharkPerLevel: 1, coinBase: 6, chaseChance: 0.35 },
-  hard: { time: 45, playerSpeed: 4.2, sharkSpeed: 3.2, sharkPerLevel: 2, coinBase: 12, chaseChance: 0.6 }
+  easy: { time: 80, playerSpeed: 5, sharkSpeed: 1.7, sharkPerLevel: 1, coinBase: 3, chaseChance: 0.15, bossChargeTime: 5000},
+  medium: { time: 60, playerSpeed: 4.5, sharkSpeed: 2.1, sharkPerLevel: 1, coinBase: 6, chaseChance: 0.35, bossChargeTime: 3500},
+  hard: { time: 45, playerSpeed: 4.2, sharkSpeed: 2.6, sharkPerLevel: 2, coinBase: 12, chaseChance: 0.6, bossChargeTime: 2500}
 };
 
 const LEVEL_THEMES = [
@@ -151,7 +155,8 @@ function makeSharks() {
     sharks.push({
       x: pos.x,
       y: pos.y,
-      size: 30,
+      sizex: 50,
+      sizey: 30,
       dx: (Math.random() < 0.5 ? -1 : 1) * baseSpeed,
       dy: (Math.random() < 0.5 ? -1 : 1) * baseSpeed * 0.75,
       isBoss: false
@@ -163,10 +168,16 @@ function makeSharks() {
     sharks.push({
       x: pos.x,
       y: pos.y,
-      size: 50,
-      dx: (Math.random() < 0.5 ? -1 : 1) * (baseSpeed + 1),
-      dy: (Math.random() < 0.5 ? -1 : 1) * (baseSpeed + 0.5),
-      isBoss: true
+      sizex: 50,
+      sizey: 70,
+      dx: (Math.random() < 0.5 ? -1 : 1) * (baseSpeed * 0.75),
+      dy: (Math.random() < 0.5 ? -1 : 1) * (baseSpeed * 0.75),
+      isBoss: true,
+      attackState: "idle",
+      attackTimer: 0,
+      nextAttackAt: Date.now() + settings.bossChargeTime,
+      chargeDx: 0,
+      chargeDy: 0
     });
     bossSound();
     showBossWarning();
@@ -253,6 +264,12 @@ function moveSharks() {
   if (now < freezeUntil) return;
 
   sharks.forEach(shark => {
+
+    if (shark.isBoss){
+      moveBoss(shark, now);
+      return;
+    }
+
     let chaseFactor = shark.isBoss ? settings.chaseChance * 1.6 : settings.chaseChance;
     if (Math.random() < 0.02 * chaseFactor * 10) {
       shark.dx = shark.x < player.x ? Math.abs(shark.dx) : -Math.abs(shark.dx);
@@ -260,10 +277,67 @@ function moveSharks() {
     }
     shark.x += shark.dx;
     shark.y += shark.dy;
-    if (shark.x < 0 || shark.x > canvas.width - shark.size) shark.dx *= -1;
-    if (shark.y < 0 || shark.y > canvas.height - shark.size) shark.dy *= -1;
+    if (shark.x < 0 || shark.x > canvas.width - shark.sizex) shark.dx *= -1;
+    if (shark.y < 0 || shark.y > canvas.height - shark.sizey) shark.dy *= -1;
   });
 }
+
+function moveBoss(shark, now){
+  if (shark.attackState == "idle" && shark.nextAttackAt <= now){
+    shark.attackState = "telegraph";
+    shark.attackTimer = now + 800;
+    shark.nextAttackAt = now + settings.bossChargeTime;
+    bossSound();
+    showMsg("⚠️ CHARGE INCOMING!", "#ff6666");
+
+    return;
+  }
+
+  if (shark.attackState == "telegraph"){
+    let centerx = shark.x + (shark.sizex/2);
+    let centery = shark.y + (shark.sizey/2);
+    let playerCenterx = player.x + (player.size/2);
+    let playerCentery = player.y + (player.size/2);
+
+    let distance = Math.sqrt(Math.pow(playerCenterx - centerx,2) + Math.pow(playerCentery - centery,2)) || 1;
+
+    shark.chargeDx = (playerCenterx - centerx) / distance * 12;
+    shark.chargeDy = (playerCentery - centery) / distance * 12;
+
+    if (now >= shark.attackTimer){
+      shark.attackState = "charging";
+      shark.attackTimer = now + 500;
+    }
+    return;
+  }
+
+  if (shark.attackState == "charging"){
+    shark.x += shark.chargeDx;
+    shark.y += shark.chargeDy;
+
+    if (shark.x < 0 || shark.x > canvas.width - shark.sizex){
+      shark.chargeDx *= -1;
+      shark.attackState = "idle";
+    }
+    if (shark.y < 0 || shark.y > canvas.height - shark.sizey){
+      shark.chargeDy *= -1;
+      shark.attackState = "idle";
+    }
+    if (shark.attackTimer <= now){
+      shark.attackState = "idle";
+    }
+
+    return;
+  }
+
+  shark.x += shark.dx;
+  shark.y += shark.dy;
+  if (shark.x < 0 || shark.x > canvas.width - shark.sizex) shark.dx *= -1;
+  if (shark.y < 0 || shark.y > canvas.height - shark.sizey) shark.dy *= -1;
+
+}
+
+
 
 function applyMagnet(now) {
   if (now >= magnetUntil) return;
@@ -291,10 +365,15 @@ function updateParticles() {
 }
 
 function hits(a, b) {
-  return a.x < b.x + b.size &&
-         a.x + a.size > b.x &&
-         a.y < b.y + b.size &&
-         a.y + a.size > b.y;
+  let ax = a.sizex ? a.sizex : a.size;
+  let ay = a.sizey ? a.sizey : a.size;
+  let bx = b.sizex ? b.sizex : b.size;
+  let by = b.sizey ? b.sizey : b.size;
+
+  return a.x < b.x + bx &&
+         a.x + ax > b.x &&
+         a.y < b.y + by &&
+         a.y + ay > b.y;
 }
 
 function checkCollisions() {
@@ -313,6 +392,7 @@ function checkCollisions() {
       bestComboThisRun = Math.max(bestComboThisRun, combo);
       lastCoinTime = now;
       document.getElementById("combo").innerText = "x" + combo;
+      document.getElementById("BarFill").style.transform = "scaleX(1)";
 
       let base = coin.isChest ? 50 : 10;
       let gained = base * combo;
@@ -373,12 +453,13 @@ function checkCollisions() {
       lives -= shark.isBoss ? 2 : 1;
       combo = 1;
       document.getElementById("combo").innerText = "x1";
+      document.getElementById("BarFill").style.transform = "scaleX(0)";
       hitSound();
       triggerShake(6, 250);
       spawnParticles(player.x, player.y, "red", 16);
       updateLivesDisplay();
 
-      let pos = randomPos(shark.size);
+      let pos = randomPos(shark.sizex);
       shark.x = pos.x;
       shark.y = pos.y;
       player.x = canvas.width / 2 - 15;
@@ -425,9 +506,20 @@ function showMsg(text, color) {
   }, 1400);
 }
 
+function updateComboBar(now){
+  if (now-lastCoinTime >= COMBO_WINDOW || combo < 1){
+    document.getElementById("BarFill").style.transform = "scaleX(0)";
+    return;
+  }
+
+  document.getElementById("BarFill").style.transform = `scaleX(${1-((now-lastCoinTime)/COMBO_WINDOW)})`
+}
+
 function draw() {
   let now = Date.now();
   ctx.save();
+
+  updateComboBar(now);
 
   if (now < shakeUntil) {
     let dx = (Math.random() - 0.5) * shakeStrength;
@@ -461,8 +553,7 @@ function draw() {
   });
 
   sharks.forEach(shark => {
-    ctx.font = (shark.isBoss ? "46px" : "28px") + " Arial";
-    ctx.fillText(shark.isBoss ? "🦈👑" : "🦈", shark.x, shark.y + (shark.isBoss ? 36 : 20));
+    ctx.drawImage(shark.isBoss ? BossSharkPng : sharkPng, shark.x, shark.y, shark.sizex, shark.sizey);
   });
 
   if (now < shieldUntil) {
@@ -538,6 +629,7 @@ function buildAchievements(won) {
 }
 
 function endGame(won) {
+  if (state == "gameover"){return;}
   clearInterval(timerInterval);
   clearInterval(gameLoopInterval);
   state = "gameover";
